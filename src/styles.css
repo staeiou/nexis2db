@@ -230,6 +230,67 @@ h2 {
   width: 100%;
 }
 
+.pending-panel {
+  margin-top: 16px;
+}
+
+.pending-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.pending-list {
+  padding: 8px 14px 14px;
+}
+
+.pending-row {
+  align-items: center;
+  border-bottom: 1px solid #eee9df;
+  cursor: grab;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 24px 34px minmax(0, 1fr) auto auto;
+  min-height: 46px;
+}
+
+.pending-row:last-child {
+  border-bottom: 0;
+}
+
+.pending-row.dragging-row {
+  opacity: 0.55;
+}
+
+.drag-handle {
+  color: #77736b;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+.pending-index,
+.pending-kind {
+  color: #5c625e;
+  font-size: 13px;
+}
+
+.pending-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.pending-kind {
+  border: 1px solid #ded9cf;
+  border-radius: 999px;
+  padding: 3px 8px;
+}
+
+.remove-pending {
+  height: 32px;
+}
+
 .log {
   padding: 8px 14px 14px;
 }
@@ -326,5 +387,16 @@ tbody tr:hover {
   .log-row {
     grid-template-columns: 1fr;
     padding: 10px 0;
+  }
+
+  .pending-row {
+    grid-template-columns: 24px 28px minmax(0, 1fr);
+    padding: 8px 0;
+  }
+
+  .pending-kind,
+  .remove-pending {
+    grid-column: 3;
+    justify-self: start;
   }
 }

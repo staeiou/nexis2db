@@ -4,8 +4,9 @@ Offline browser app for converting Nexis Uni PDF exports into one SQLite databas
 
 ## Current scope
 
+- Supports direct Nexis Uni `.pdf` uploads.
 - Supports `.zip` files containing Nexis Uni PDF exports.
-- Supports direct `.pdf` uploads.
+- Lets pending files be reordered before import.
 - Parses the current Nexis Uni PDF layout that separates articles with `End of Document`.
 - Exports:
   - `nexis2db.sqlite` with an `articles` table
@@ -17,4 +18,3 @@ Offline browser app for converting Nexis Uni PDF exports into one SQLite databas
 npm install
 npm run dev
 ```
-

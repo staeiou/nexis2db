@@ -7,6 +7,7 @@ import "./styles.css";
 const state = {
   imports: [],
   articles: [],
+  pendingFiles: [],
   busy: false
 };
 
@@ -16,7 +17,7 @@ document.querySelector("#app").innerHTML = `
       <header class="topbar">
         <div>
           <h1>nexis2db</h1>
-          <p>Convert Nexis Uni exports downloaded as PDF documents inside ZIP files into local data files.</p>
+          <p>Convert Nexis Uni PDF exports, whether uploaded as bare PDFs or ZIP files, into local data files.</p>
         </div>
         <div class="actions">
           <button id="downloadSqlite" class="primary" disabled>Download SQLite</button>
@@ -27,9 +28,20 @@ document.querySelector("#app").innerHTML = `
 
       <label id="dropzone" class="dropzone">
         <input id="fileInput" type="file" accept=".zip,.pdf,application/pdf,application/zip" multiple />
-        <span class="drop-title">Drop Nexis Uni PDF export ZIPs</span>
-        <span class="drop-subtitle">Add as many Nexis export ZIPs as needed. Each PDF is parsed locally and merged into one dataset.</span>
+        <span class="drop-title">Drop Nexis Uni PDFs or ZIPs</span>
+        <span class="drop-subtitle">Add as many Nexis PDF exports as needed, then drag pending files into the order to parse them.</span>
       </label>
+
+      <section id="pendingPanel" class="panel pending-panel" hidden>
+        <div class="panel-head">
+          <h2>Pending files</h2>
+          <div class="pending-actions">
+            <button id="clearPending" class="ghost" disabled>Clear pending</button>
+            <button id="importPending" class="primary" disabled>Import in this order</button>
+          </div>
+        </div>
+        <div id="pendingList" class="pending-list"></div>
+      </section>
 
       <section id="progressPanel" class="progress-panel" aria-live="polite" hidden>
         <div class="progress-head">
@@ -99,12 +111,16 @@ const downloadSqlite = document.querySelector("#downloadSqlite");
 const downloadExcel = document.querySelector("#downloadExcel");
 const downloadCsv = document.querySelector("#downloadCsv");
 const clearAll = document.querySelector("#clearAll");
+const pendingPanel = document.querySelector("#pendingPanel");
+const pendingList = document.querySelector("#pendingList");
+const clearPending = document.querySelector("#clearPending");
+const importPending = document.querySelector("#importPending");
 const progressPanel = document.querySelector("#progressPanel");
 const progressLabel = document.querySelector("#progressLabel");
 const progressPercent = document.querySelector("#progressPercent");
 const progressFill = document.querySelector("#progressFill");
 
-fileInput.addEventListener("change", () => importFiles([...fileInput.files]));
+fileInput.addEventListener("change", () => stageFiles([...fileInput.files]));
 dropzone.addEventListener("dragover", (event) => {
   event.preventDefault();
   dropzone.classList.add("dragging");
@@ -113,7 +129,7 @@ dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragging
 dropzone.addEventListener("drop", (event) => {
   event.preventDefault();
   dropzone.classList.remove("dragging");
-  importFiles([...event.dataTransfer.files]);
+  stageFiles([...event.dataTransfer.files]);
 });
 filterInput.addEventListener("input", renderArticles);
 clearAll.addEventListener("click", () => {
@@ -121,6 +137,12 @@ clearAll.addEventListener("click", () => {
   state.articles = [];
   render();
 });
+clearPending.addEventListener("click", () => {
+  state.pendingFiles = [];
+  fileInput.value = "";
+  render();
+});
+importPending.addEventListener("click", () => importPendingFiles());
 downloadSqlite.addEventListener("click", async () => {
   setBusy(true, "Building SQLite database...");
   setProgress("Building SQLite database", 15);
@@ -171,6 +193,20 @@ async function importFiles(files) {
     fileInput.value = "";
     render();
   }
+}
+
+function stageFiles(files) {
+  if (!files.length || state.busy) return;
+  state.pendingFiles.push(...files);
+  fileInput.value = "";
+  render();
+}
+
+async function importPendingFiles() {
+  const files = [...state.pendingFiles];
+  state.pendingFiles = [];
+  render();
+  await importFiles(files);
 }
 
 async function importOne(file) {
@@ -244,10 +280,75 @@ function render() {
   downloadExcel.disabled = !articleCount || state.busy;
   downloadCsv.disabled = !articleCount || state.busy;
   clearAll.disabled = (!articleCount && !state.imports.length) || state.busy;
+  clearPending.disabled = !state.pendingFiles.length || state.busy;
+  importPending.disabled = !state.pendingFiles.length || state.busy;
   filterInput.disabled = !articleCount;
 
+  renderPendingFiles();
   renderImports();
   renderArticles();
+}
+
+function renderPendingFiles() {
+  pendingPanel.hidden = !state.pendingFiles.length;
+  if (!state.pendingFiles.length) {
+    pendingList.innerHTML = "";
+    return;
+  }
+
+  pendingList.innerHTML = state.pendingFiles
+    .map(
+      (file, index) => `
+        <div class="pending-row" draggable="${!state.busy}" data-index="${index}">
+          <span class="drag-handle" aria-hidden="true">::</span>
+          <span class="pending-index">${index + 1}</span>
+          <span class="pending-name">${escapeHtml(file.name)}</span>
+          <span class="pending-kind">${escapeHtml(fileKind(file))}</span>
+          <button class="ghost remove-pending" data-index="${index}" ${state.busy ? "disabled" : ""}>Remove</button>
+        </div>
+      `
+    )
+    .join("");
+
+  pendingList.querySelectorAll(".pending-row").forEach((row) => {
+    row.addEventListener("dragstart", (event) => {
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", row.dataset.index);
+      row.classList.add("dragging-row");
+    });
+    row.addEventListener("dragend", () => row.classList.remove("dragging-row"));
+    row.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+    });
+    row.addEventListener("drop", (event) => {
+      event.preventDefault();
+      const from = Number(event.dataTransfer.getData("text/plain"));
+      const to = Number(row.dataset.index);
+      movePendingFile(from, to);
+    });
+  });
+
+  pendingList.querySelectorAll(".remove-pending").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.pendingFiles.splice(Number(button.dataset.index), 1);
+      render();
+    });
+  });
+}
+
+function movePendingFile(from, to) {
+  if (!Number.isInteger(from) || !Number.isInteger(to) || from === to) return;
+  const [file] = state.pendingFiles.splice(from, 1);
+  state.pendingFiles.splice(to, 0, file);
+  render();
+}
+
+function fileKind(file) {
+  const lower = file.name.toLowerCase();
+  if (lower.endsWith(".zip")) return "ZIP";
+  if (lower.endsWith(".pdf") || file.type === "application/pdf") return "PDF";
+  return "Skipped";
 }
 
 function renderImports() {
