@@ -1,4 +1,4 @@
-# nu2db
+# nexis2db
 
 Offline browser app for converting Nexis Uni PDF exports into one SQLite database.
 
@@ -8,8 +8,8 @@ Offline browser app for converting Nexis Uni PDF exports into one SQLite databas
 - Supports direct `.pdf` uploads.
 - Parses the current Nexis Uni PDF layout that separates articles with `End of Document`.
 - Exports:
-  - `nu2db.sqlite` with an `articles` table
-  - `nu2db.csv`
+  - `nexis2db.sqlite` with an `articles` table
+  - `nexis2db.csv`
 
 ## Development
 

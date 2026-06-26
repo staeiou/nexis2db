@@ -1,4 +1,4 @@
-const CACHE_NAME = "nu2db-v1";
+const CACHE_NAME = "nexis2db-v1";
 const APP_ASSETS = [
   "/",
   "/index.html",
