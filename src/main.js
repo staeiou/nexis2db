@@ -174,7 +174,16 @@ downloadExcel.addEventListener("click", () => {
 });
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`));
+  let reloadingForServiceWorker = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (reloadingForServiceWorker) return;
+    reloadingForServiceWorker = true;
+    window.location.reload();
+  });
+  window.addEventListener("load", async () => {
+    const registration = await navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`);
+    registration.update();
+  });
 }
 
 async function importFiles(files) {
@@ -488,18 +497,16 @@ async function sha256(bytes) {
     const digest = await crypto.subtle.digest("SHA-256", bytes);
     return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
   }
-  return fnv1a64(bytes);
+  return fnv1a32(bytes);
 }
 
-function fnv1a64(bytes) {
-  let hash = 0xcbf29ce484222325n;
-  const prime = 0x100000001b3n;
-  const mask = 0xffffffffffffffffn;
+function fnv1a32(bytes) {
+  let hash = 0x811c9dc5;
   for (const byte of bytes) {
-    hash ^= BigInt(byte);
-    hash = (hash * prime) & mask;
+    hash ^= byte;
+    hash = Math.imul(hash, 0x01000193) >>> 0;
   }
-  return `fnv1a64-${hash.toString(16).padStart(16, "0")}`;
+  return `fnv1a32-${hash.toString(16).padStart(8, "0")}`;
 }
 
 function downloadBlob(content, name, type) {
