@@ -112,8 +112,6 @@ function csvCell(value) {
 }
 
 function locateSqlWasm(file) {
-  if (typeof window !== "undefined" && window.location) {
-    return new URL(file, window.location.href).href;
-  }
-  return new URL(`../public/${file}`, import.meta.url).href;
+  const wasmFile = file.endsWith(".wasm") ? "sql-wasm.wasm" : file;
+  return new URL(wasmFile, new URL(import.meta.env.BASE_URL, window.location.origin)).href;
 }

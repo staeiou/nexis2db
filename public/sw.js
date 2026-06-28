@@ -1,11 +1,12 @@
-const CACHE_NAME = "nexis2db-v1";
+const CACHE_NAME = "nexis2db-v2";
+const APP_BASE = self.registration.scope;
 const APP_ASSETS = [
-  "/",
-  "/index.html",
-  "/manifest.webmanifest",
-  "/icon.svg",
-  "/sql-wasm.wasm"
-];
+  "",
+  "index.html",
+  "manifest.webmanifest",
+  "icon.svg",
+  "sql-wasm.wasm"
+].map((path) => new URL(path, APP_BASE).href);
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_ASSETS)));
