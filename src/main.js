@@ -502,8 +502,8 @@ async function sha256(bytes) {
 
 function fnv1a32(bytes) {
   let hash = 0x811c9dc5;
-  for (const byte of bytes) {
-    hash ^= byte;
+  for (let index = 0; index < bytes.length; index += 1) {
+    hash ^= bytes[index];
     hash = Math.imul(hash, 0x01000193) >>> 0;
   }
   return `fnv1a32-${hash.toString(16).padStart(8, "0")}`;
