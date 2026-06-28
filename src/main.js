@@ -199,7 +199,8 @@ async function importFiles(files) {
     setProgress("Import complete", 100);
     hideProgressSoon();
   } catch (error) {
-    state.imports.push({ name: "Import error", detail: error.message, count: 0, status: "error" });
+    console.error("import error", error);
+    state.imports.push({ name: "Import error", detail: describeError(error), count: 0, status: "error" });
   } finally {
     setBusy(false);
     fileInput.value = "";
@@ -219,7 +220,8 @@ async function stageFiles(files) {
     setProgress("Files ready to import", 100);
     hideProgressSoon();
   } catch (error) {
-    state.imports.push({ name: "Import error", detail: error.message, count: 0, status: "error" });
+    console.error("stage error", error);
+    state.imports.push({ name: "Import error", detail: describeError(error), count: 0, status: "error" });
   } finally {
     setBusy(false);
     fileInput.value = "";
@@ -518,6 +520,14 @@ function downloadBlob(content, name, type) {
   link.download = name;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+function describeError(error) {
+  if (!error) return "Unknown error";
+  const name = error.name ? `${error.name}: ` : "";
+  const message = error.message || String(error);
+  const stack = error.stack ? `\n${error.stack}` : "";
+  return `${name}${message}${stack}`;
 }
 
 function escapeHtml(value) {
