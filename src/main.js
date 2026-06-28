@@ -1,3 +1,4 @@
+import "./polyfills.js";
 import JSZip from "jszip";
 import { createDatabase, exportCsv, exportExcel } from "./database.js";
 import { extractPdfPages } from "./pdf.js";
